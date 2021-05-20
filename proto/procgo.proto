@@ -1,0 +1,21 @@
+syntax = "proto3";
+option go_package = "./;proto";
+
+import "google/protobuf/empty.proto";
+
+message Services {
+  repeated ServiceDefinition services = 1;
+}
+
+message ServiceDefinition {
+  string name = 1;
+  string command = 2;
+}
+
+service Procgo {
+  rpc Start (Services) returns (google.protobuf.Empty);
+  rpc Stop (Services) returns (google.protobuf.Empty);
+  rpc Restart (Services) returns (google.protobuf.Empty);
+
+  rpc KillAll (google.protobuf.Empty) returns (google.protobuf.Empty);
+}

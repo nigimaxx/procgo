@@ -1,9 +1,12 @@
 package pkg
 
 import (
-	"fmt"
 	"os"
 	"os/exec"
+	"syscall"
+
+	"github.com/fatih/color"
+	"github.com/nigimaxx/procgo/proto"
 )
 
 type Service struct {
@@ -18,6 +21,14 @@ func init() {
 	if shell == "" {
 		panic("$SHELL not defined")
 	}
+}
+
+func NewServiceFromDef(s *proto.ServiceDefinition) Service {
+	return Service{s.Name, s.Command}
+}
+
+func (s *Service) ToDef() *proto.ServiceDefinition {
+	return &proto.ServiceDefinition{Name: s.Name, Command: s.Command}
 }
 
 func (s *Service) Start(killChan <-chan os.Signal) error {
@@ -44,13 +55,15 @@ func (s *Service) Start(killChan <-chan os.Signal) error {
 	}()
 
 	select {
-	case signal := <-killChan:
-		out.Stdout.Write([]byte(fmt.Sprintf("Killing with signal %v", signal)))
-		cmd.Process.Signal(signal)
+	case <-killChan:
+		out.Stdout.Write([]byte(color.YellowString("Killing with signal %v", syscall.SIGINT)))
+		cmd.Process.Signal(syscall.SIGINT)
 		return nil
 	case err := <-cmdErrChan:
+		out.Stdout.Write([]byte(color.RedString("Error %v", err)))
 		return err
 	case <-doneChan:
+		out.Stdout.Write([]byte(color.GreenString("Command done")))
 		return nil
 	}
 

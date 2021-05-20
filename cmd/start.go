@@ -32,7 +32,7 @@ var startCmd = &cobra.Command{
 		services := []pkg.Service{}
 
 		for _, s := range allServices {
-			if contains(args, s.Name) {
+			if len(args) == 0 || contains(args, s.Name) {
 				services = append(services, s)
 			}
 		}
@@ -54,10 +54,8 @@ var startCmd = &cobra.Command{
 		}
 
 		go func() {
-			signal := <-sigChan
-			for range services {
-				killChan <- signal
-			}
+			<-sigChan
+			close(killChan)
 		}()
 
 		doneCount := 0
@@ -65,7 +63,7 @@ var startCmd = &cobra.Command{
 		for {
 			select {
 			case err := <-errChan:
-				killChan <- syscall.SIGINT
+				close(killChan)
 				time.Sleep(1 * time.Second)
 				return err
 
