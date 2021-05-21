@@ -9,12 +9,15 @@ import (
 
 func (s *ProcgoServer) Stop(_ context.Context, definitions *proto.Services) (*emptypb.Empty, error) {
 	for _, svcDef := range definitions.Services {
-		for _, service := range s.Services {
+		for i, service := range s.Services {
 			if svcDef.Name == service.Name {
+				s.Services = append(s.Services[:i], s.Services[i+1:]...)
 				close(service.StopChan)
 			}
 		}
 	}
+
+	s.DoneChan <- struct{}{}
 
 	return &emptypb.Empty{}, nil
 }

@@ -1,9 +1,10 @@
 package pkg
 
 import (
-	"io"
+	"log"
 	"os"
 	"os/exec"
+	"sync"
 	"syscall"
 
 	"github.com/fatih/color"
@@ -15,10 +16,10 @@ type Service struct {
 	Command string
 
 	StopChan chan os.Signal
-	// currently if no one is listening the writer is blocking
-	// possible problem with broadcasting logs to multiple instances of the client
-	LogsReader *io.PipeReader
-	LogsWriter *io.PipeWriter
+
+	logChan   chan []byte
+	listeners map[chan []byte]struct{}
+	mu        sync.Mutex
 }
 
 var shell string
@@ -30,9 +31,8 @@ func init() {
 	}
 }
 
-func NewServiceFromDef(s *proto.ServiceDefinition) Service {
-	r, w := io.Pipe()
-	return Service{s.Name, s.Command, make(chan os.Signal), r, w}
+func NewServiceFromDef(s *proto.ServiceDefinition) *Service {
+	return &Service{Name: s.Name, Command: s.Command, StopChan: make(chan os.Signal), logChan: make(chan []byte), listeners: make(map[chan []byte]struct{})}
 }
 
 func (s *Service) ToDef() *proto.ServiceDefinition {
@@ -42,7 +42,7 @@ func (s *Service) ToDef() *proto.ServiceDefinition {
 func (s *Service) Start(killChan <-chan os.Signal) error {
 	cmd := exec.Command(shell, "-c", s.Command)
 
-	out := NewPrefixWriter(s.Name, s.LogsWriter)
+	out := NewPrefixWriter(s.Name, s.logChan)
 
 	cmd.Stdout = out
 	cmd.Stderr = out
@@ -63,21 +63,59 @@ func (s *Service) Start(killChan <-chan os.Signal) error {
 		}
 	}()
 
+	go func() {
+		for {
+			line, ok := <-s.logChan
+			if !ok {
+				for l := range s.listeners {
+					close(l)
+				}
+
+				s.mu.Lock()
+				s.listeners = make(map[chan []byte]struct{})
+				s.mu.Unlock()
+				break
+			}
+
+			s.mu.Lock()
+			for l := range s.listeners {
+				l <- line
+			}
+			s.mu.Unlock()
+		}
+	}()
+
 	select {
 	case <-killChan:
 		out.Write([]byte(color.YellowString("Killing with signal %v", syscall.SIGINT)))
 		cmd.Process.Signal(syscall.SIGINT)
-		return s.LogsWriter.Close()
+		close(s.logChan)
+		return nil
 	case <-s.StopChan:
 		out.Write([]byte(color.YellowString("Killing with signal %v", syscall.SIGINT)))
 		cmd.Process.Signal(syscall.SIGINT)
-		return s.LogsWriter.Close()
+		close(s.logChan)
+		return nil
 	case err := <-cmdErrChan:
 		out.Write([]byte(color.RedString("Error %v", err)))
+		close(s.logChan)
 		return err
 	case <-doneChan:
 		out.Write([]byte(color.GreenString("Command done")))
-		return s.LogsWriter.Close()
+		close(s.logChan)
+		return nil
 	}
+}
 
+func (s *Service) AddListener(ch chan []byte) {
+	s.mu.Lock()
+	s.listeners[ch] = struct{}{}
+	s.mu.Unlock()
+	log.Println("AddListener", len(s.listeners))
+}
+
+func (s *Service) RemoveListener(ch chan []byte) {
+	s.mu.Lock()
+	delete(s.listeners, ch)
+	s.mu.Unlock()
 }

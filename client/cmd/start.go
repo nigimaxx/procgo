@@ -34,10 +34,10 @@ var startCmd = &cobra.Command{
 	Use:     "start [services ...]",
 	Short:   "start",
 	Long:    `start`,
-	PreRunE: connectClient,
+	PreRunE: createConnectPreRun(withStartDaemon),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		// flagSet := cmd.Flags()
-		// detach, _ := flagSet.GetBool("detach")
+		flagSet := cmd.Flags()
+		detach, _ := flagSet.GetBool("detach")
 
 		allServices, err := pkg.ParseProcfile(procfile)
 		if err != nil {
@@ -48,7 +48,7 @@ var startCmd = &cobra.Command{
 
 		for _, s := range allServices {
 			if len(args) == 0 || contains(args, s.Name) {
-				services = append(services, s.ToDef())
+				services = append(services, s)
 			}
 		}
 
@@ -57,12 +57,12 @@ var startCmd = &cobra.Command{
 		}
 
 		// skip logs if -d
-		// if detach {
-		// 	return nil
-		// }
+		if detach {
+			return nil
+		}
 
 		// listen
-		stream, err := client.Logs(context.Background(), &proto.AllOrServices{All: false, Services: services})
+		stream, err := client.Logs(context.Background(), &proto.AllOrServices{All: true})
 		if err != nil {
 			return err
 		}

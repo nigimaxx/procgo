@@ -18,23 +18,41 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
-func connectClient(_ *cobra.Command, _ []string) error {
-	conn, err := grpc.Dial("unix://"+pkg.SocketPath, grpc.WithInsecure(), pkg.WithClientUnaryInterceptor(procfile))
-	if err != nil {
-		return err
+type options struct {
+	start bool
+}
+
+type connectOption func(options) options
+
+func withStartDaemon(opts options) options {
+	opts.start = true
+	return opts
+}
+
+func createConnectPreRun(opts ...connectOption) func(*cobra.Command, []string) error {
+	connOpts := options{}
+	for _, o := range opts {
+		connOpts = o(connOpts)
 	}
 
-	client = proto.NewProcgoClient(conn)
-	if _, err := client.Ping(context.Background(), &emptypb.Empty{}); err != nil {
-		st, ok := status.FromError(err)
-		if ok && st.Code() == codes.Unavailable {
-			return startDaemon()
+	return func(_ *cobra.Command, _ []string) error {
+		conn, err := grpc.Dial("unix://"+pkg.SocketPath, grpc.WithInsecure(), pkg.WithClientUnaryInterceptor(procfile))
+		if err != nil {
+			return err
 		}
 
-		return err
-	}
+		client = proto.NewProcgoClient(conn)
+		if _, err := client.Ping(context.Background(), &emptypb.Empty{}); err != nil {
+			st, ok := status.FromError(err)
+			if connOpts.start && ok && st.Code() == codes.Unavailable {
+				return startDaemon()
+			}
 
-	return nil
+			return err
+		}
+
+		return nil
+	}
 }
 
 func startDaemon() error {
@@ -56,8 +74,19 @@ func startDaemon() error {
 		return err
 	}
 
-	time.Sleep(5 * time.Second)
-	// check connection instead
+	for {
+		time.Sleep(100 * time.Millisecond)
+
+		if _, err := client.Ping(context.Background(), &emptypb.Empty{}); err != nil {
+			st, ok := status.FromError(err)
+			if ok && st.Code() == codes.Unavailable {
+				continue
+			}
+			return err
+		}
+
+		break
+	}
 
 	return nil
 }

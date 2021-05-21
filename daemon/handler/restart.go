@@ -8,6 +8,5 @@ import (
 )
 
 func (s *ProcgoServer) Restart(_ context.Context, definitions *proto.Services) (*emptypb.Empty, error) {
-
 	return &emptypb.Empty{}, nil
 }

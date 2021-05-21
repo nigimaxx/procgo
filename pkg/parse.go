@@ -3,16 +3,18 @@ package pkg
 import (
 	"io/ioutil"
 	"strings"
+
+	"github.com/nigimaxx/procgo/proto"
 )
 
-func ParseProcfile(procfile string) ([]Service, error) {
+func ParseProcfile(procfile string) ([]*proto.ServiceDefinition, error) {
 	data, err := ioutil.ReadFile(procfile)
 	if err != nil {
 		return nil, err
 	}
 
 	lines := strings.Split(string(data), "\n")
-	services := []Service{}
+	services := []*proto.ServiceDefinition{}
 
 	for _, line := range lines {
 		split := strings.Split(line, ":")
@@ -21,7 +23,7 @@ func ParseProcfile(procfile string) ([]Service, error) {
 			continue
 		}
 
-		services = append(services, Service{
+		services = append(services, &proto.ServiceDefinition{
 			Name:    strings.TrimSpace(split[0]),
 			Command: strings.TrimSpace(strings.Join(split[1:], ":")),
 		})

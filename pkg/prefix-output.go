@@ -1,7 +1,6 @@
 package pkg
 
 import (
-	"io"
 	"strings"
 
 	"github.com/fatih/color"
@@ -20,15 +19,15 @@ var (
 	}
 )
 
-func NewPrefixWriter(prefix string, writer io.Writer) PrefixWriter {
+func NewPrefixWriter(prefix string, ch chan []byte) PrefixWriter {
 	colorIndex = (colorIndex + 1) % len(colors)
-	return PrefixWriter{prefix, colors[colorIndex], writer}
+	return PrefixWriter{prefix, colors[colorIndex], ch}
 }
 
 type PrefixWriter struct {
 	prefix    string
 	colorName color.Attribute
-	writer    io.Writer
+	ch        chan []byte
 }
 
 func (w PrefixWriter) Write(p []byte) (n int, err error) {
@@ -43,9 +42,7 @@ func (w PrefixWriter) Write(p []byte) (n int, err error) {
 		}
 	}
 
-	if _, err := w.writer.Write([]byte(withPrefix)); err != nil {
-		return 0, err
-	}
+	w.ch <- []byte(withPrefix)
 
 	return len(p), nil
 }

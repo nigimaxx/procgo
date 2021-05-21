@@ -12,7 +12,7 @@ var stopCmd = &cobra.Command{
 	Use:     "stop [services ...]",
 	Short:   "stop",
 	Long:    `stop`,
-	PreRunE: connectClient,
+	PreRunE: createConnectPreRun(),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		allServices, err := pkg.ParseProcfile(procfile)
 		if err != nil {
@@ -23,7 +23,7 @@ var stopCmd = &cobra.Command{
 
 		for _, s := range allServices {
 			if len(args) == 0 || contains(args, s.Name) {
-				services = append(services, s.ToDef())
+				services = append(services, s)
 			}
 		}
 

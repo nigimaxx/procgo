@@ -13,15 +13,15 @@ func (s *ProcgoServer) Start(_ context.Context, definitions *proto.Services) (*e
 		svc := pkg.NewServiceFromDef(svcDef)
 
 		if !pkg.InServiceList(s.Services, svc.Name) {
-			go func(svc pkg.Service) {
+			go func(svc *pkg.Service) {
 				s.Services = append(s.Services, svc)
+				s.NewServiceChan <- svc
 
 				if err := svc.Start(s.KillChan); err != nil {
 					s.ErrChan <- err
 					return
 				}
 
-				// remove
 				for i, service := range s.Services {
 					if service.Name == svc.Name {
 						s.Services = append(s.Services[:i], s.Services[i+1:]...)
