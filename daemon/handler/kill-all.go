@@ -8,5 +8,6 @@ import (
 
 func (s *ProcgoServer) KillAll(_ context.Context, _ *emptypb.Empty) (*emptypb.Empty, error) {
 	close(s.KillChan)
+	s.DoneChan <- struct{}{}
 	return &emptypb.Empty{}, nil
 }

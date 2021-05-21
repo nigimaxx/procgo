@@ -51,7 +51,6 @@ func main() {
 				time.Sleep(1 * time.Second)
 				close(doneChan)
 			case <-server.DoneChan:
-				log.Println("Done")
 				if len(server.Services) == 0 {
 					time.Sleep(1 * time.Second)
 					close(doneChan)
