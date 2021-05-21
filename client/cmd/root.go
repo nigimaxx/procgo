@@ -28,7 +28,7 @@ func init() {
 	rootCmd.AddCommand(restartCmd)
 	rootCmd.AddCommand(stopCmd)
 	rootCmd.AddCommand(logsCmd)
-	rootCmd.AddCommand(killDaemonCmd)
+	rootCmd.AddCommand(killCmd)
 }
 
 func Execute() {
