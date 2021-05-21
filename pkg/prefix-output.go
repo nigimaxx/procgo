@@ -6,24 +6,6 @@ import (
 	"github.com/fatih/color"
 )
 
-var (
-	colorIndex = 0
-	colors     = []color.Attribute{
-		color.FgRed,
-		color.FgGreen,
-		color.FgYellow,
-		color.FgBlue,
-		color.FgMagenta,
-		color.FgCyan,
-		color.FgWhite,
-	}
-)
-
-func NewPrefixWriter(prefix string, ch chan []byte) PrefixWriter {
-	colorIndex = (colorIndex + 1) % len(colors)
-	return PrefixWriter{prefix, colors[colorIndex], ch}
-}
-
 type PrefixWriter struct {
 	prefix    string
 	colorName color.Attribute

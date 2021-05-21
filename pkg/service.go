@@ -1,7 +1,6 @@
 package pkg
 
 import (
-	"log"
 	"os"
 	"os/exec"
 	"sync"
@@ -11,18 +10,19 @@ import (
 	"github.com/nigimaxx/procgo/proto"
 )
 
-type Service struct {
-	Name    string
-	Command string
-
-	StopChan chan os.Signal
-
-	logChan   chan []byte
-	listeners map[chan []byte]struct{}
-	mu        sync.Mutex
-}
-
-var shell string
+var (
+	shell      string
+	colorIndex = -1
+	colors     = []color.Attribute{
+		color.FgRed,
+		color.FgGreen,
+		color.FgYellow,
+		color.FgBlue,
+		color.FgMagenta,
+		color.FgCyan,
+		color.FgWhite,
+	}
+)
 
 func init() {
 	shell = os.Getenv("SHELL")
@@ -31,19 +31,56 @@ func init() {
 	}
 }
 
-func NewServiceFromDef(s *proto.ServiceDefinition) *Service {
-	return &Service{Name: s.Name, Command: s.Command, StopChan: make(chan os.Signal), logChan: make(chan []byte), listeners: make(map[chan []byte]struct{})}
+type Service struct {
+	Name     string
+	Command  string
+	StopChan chan os.Signal
+
+	colorName color.Attribute
+	logChan   chan []byte
+	listeners map[chan []byte]struct{}
+	mu        sync.Mutex
 }
 
-func (s *Service) ToDef() *proto.ServiceDefinition {
-	return &proto.ServiceDefinition{Name: s.Name, Command: s.Command}
+func NewServiceFromDef(s *proto.ServiceDefinition) *Service {
+	colorIndex = (colorIndex + 1) % len(colors)
+	return &Service{
+		Name:      s.Name,
+		Command:   s.Command,
+		StopChan:  make(chan os.Signal),
+		colorName: colors[colorIndex],
+		logChan:   make(chan []byte),
+		listeners: make(map[chan []byte]struct{}),
+	}
+}
+
+func (s *Service) Clone() *Service {
+	return &Service{
+		Name:      s.Name,
+		Command:   s.Command,
+		StopChan:  make(chan os.Signal),
+		colorName: s.colorName,
+		logChan:   make(chan []byte),
+		listeners: make(map[chan []byte]struct{}),
+	}
+}
+
+func (s *Service) AddListener(ch chan []byte) {
+	s.mu.Lock()
+	s.listeners[ch] = struct{}{}
+	s.mu.Unlock()
+}
+
+func (s *Service) RemoveListener(ch chan []byte) {
+	s.mu.Lock()
+	delete(s.listeners, ch)
+	s.mu.Unlock()
 }
 
 func (s *Service) Start(killChan <-chan os.Signal) error {
 	cmd := exec.Command(shell, "-c", s.Command)
 
-	out := NewPrefixWriter(s.Name, s.logChan)
-
+	out := PrefixWriter{s.Name, s.colorName, s.logChan}
 	cmd.Stdout = out
 	cmd.Stderr = out
 
@@ -105,17 +142,4 @@ func (s *Service) Start(killChan <-chan os.Signal) error {
 		close(s.logChan)
 		return nil
 	}
-}
-
-func (s *Service) AddListener(ch chan []byte) {
-	s.mu.Lock()
-	s.listeners[ch] = struct{}{}
-	s.mu.Unlock()
-	log.Println("AddListener", len(s.listeners))
-}
-
-func (s *Service) RemoveListener(ch chan []byte) {
-	s.mu.Lock()
-	delete(s.listeners, ch)
-	s.mu.Unlock()
 }

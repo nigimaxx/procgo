@@ -25,3 +25,21 @@ func NewProcgoServer() ProcgoServer {
 		KillChan:       make(chan os.Signal, 1),
 	}
 }
+
+func (s *ProcgoServer) startInternal(svc *pkg.Service) {
+	s.Services = append(s.Services, svc)
+	s.NewServiceChan <- svc
+
+	if err := svc.Start(s.KillChan); err != nil {
+		s.ErrChan <- err
+		return
+	}
+
+	for i, service := range s.Services {
+		if service.Name == svc.Name {
+			s.Services = append(s.Services[:i], s.Services[i+1:]...)
+			s.DoneChan <- struct{}{}
+			break
+		}
+	}
+}

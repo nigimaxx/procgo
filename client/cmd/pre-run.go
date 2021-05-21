@@ -67,7 +67,7 @@ func startDaemon() error {
 		return err
 	}
 
-	cmd := exec.Command("/Users/niklasmack/projects/private/procgo/daemon/daemon", absProcfile)
+	cmd := exec.Command("procgo-daemon", absProcfile)
 	// start process in its own process group to prevent ctrl+c to kill it
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true, Pgid: 0}
 	if err := cmd.Start(); err != nil {
