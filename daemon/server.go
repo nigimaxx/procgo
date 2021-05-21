@@ -46,7 +46,7 @@ func main() {
 		for {
 			select {
 			case err := <-server.ErrChan:
-				log.Println(err)
+				log.Println("Error:", err)
 				close(server.KillChan)
 				time.Sleep(1 * time.Second)
 				close(doneChan)
