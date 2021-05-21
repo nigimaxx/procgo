@@ -9,7 +9,6 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/nigimaxx/procgo/pkg"
 	"github.com/nigimaxx/procgo/proto"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -39,17 +38,9 @@ var startCmd = &cobra.Command{
 		flagSet := cmd.Flags()
 		detach, _ := flagSet.GetBool("detach")
 
-		allServices, err := pkg.ParseProcfile(procfile)
+		services, err := parseAndSelect(args)
 		if err != nil {
 			return err
-		}
-
-		services := []*proto.ServiceDefinition{}
-
-		for _, s := range allServices {
-			if len(args) == 0 || contains(args, s.Name) {
-				services = append(services, s)
-			}
 		}
 
 		if _, err := client.Start(context.Background(), &proto.Services{Services: services}); err != nil {
@@ -61,7 +52,6 @@ var startCmd = &cobra.Command{
 			return nil
 		}
 
-		// listen
 		stream, err := client.Logs(context.Background(), &proto.AllOrServices{All: true})
 		if err != nil {
 			return err
