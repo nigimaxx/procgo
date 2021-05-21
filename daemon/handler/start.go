@@ -12,7 +12,7 @@ func (s *ProcgoServer) Start(_ context.Context, definitions *proto.Services) (*e
 	for _, svcDef := range definitions.Services {
 		svc := pkg.NewServiceFromDef(svcDef)
 
-		if !pkg.InServiceList(s.Services, svc) {
+		if !pkg.InServiceList(s.Services, svc.Name) {
 			go func(svc pkg.Service) {
 				s.Services = append(s.Services, svc)
 

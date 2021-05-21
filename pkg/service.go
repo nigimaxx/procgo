@@ -1,6 +1,7 @@
 package pkg
 
 import (
+	"io"
 	"os"
 	"os/exec"
 	"syscall"
@@ -12,6 +13,12 @@ import (
 type Service struct {
 	Name    string
 	Command string
+
+	StopChan chan os.Signal
+	// currently if no one is listening the writer is blocking
+	// possible problem with broadcasting logs to multiple instances of the client
+	LogsReader *io.PipeReader
+	LogsWriter *io.PipeWriter
 }
 
 var shell string
@@ -24,7 +31,8 @@ func init() {
 }
 
 func NewServiceFromDef(s *proto.ServiceDefinition) Service {
-	return Service{s.Name, s.Command}
+	r, w := io.Pipe()
+	return Service{s.Name, s.Command, make(chan os.Signal), r, w}
 }
 
 func (s *Service) ToDef() *proto.ServiceDefinition {
@@ -34,10 +42,10 @@ func (s *Service) ToDef() *proto.ServiceDefinition {
 func (s *Service) Start(killChan <-chan os.Signal) error {
 	cmd := exec.Command(shell, "-c", s.Command)
 
-	out := NewPrefixOutput(s.Name)
+	out := NewPrefixWriter(s.Name, s.LogsWriter)
 
-	cmd.Stdout = out.Stdout
-	cmd.Stderr = out.Stderr
+	cmd.Stdout = out
+	cmd.Stderr = out
 
 	if err := cmd.Start(); err != nil {
 		return err
@@ -47,7 +55,8 @@ func (s *Service) Start(killChan <-chan os.Signal) error {
 	doneChan := make(chan struct{})
 
 	go func() {
-		if err := cmd.Wait(); err != nil {
+		err := cmd.Wait()
+		if err != nil {
 			cmdErrChan <- err
 		} else {
 			doneChan <- struct{}{}
@@ -56,15 +65,19 @@ func (s *Service) Start(killChan <-chan os.Signal) error {
 
 	select {
 	case <-killChan:
-		out.Stdout.Write([]byte(color.YellowString("Killing with signal %v", syscall.SIGINT)))
+		out.Write([]byte(color.YellowString("Killing with signal %v", syscall.SIGINT)))
 		cmd.Process.Signal(syscall.SIGINT)
-		return nil
+		return s.LogsWriter.Close()
+	case <-s.StopChan:
+		out.Write([]byte(color.YellowString("Killing with signal %v", syscall.SIGINT)))
+		cmd.Process.Signal(syscall.SIGINT)
+		return s.LogsWriter.Close()
 	case err := <-cmdErrChan:
-		out.Stdout.Write([]byte(color.RedString("Error %v", err)))
+		out.Write([]byte(color.RedString("Error %v", err)))
 		return err
 	case <-doneChan:
-		out.Stdout.Write([]byte(color.GreenString("Command done")))
-		return nil
+		out.Write([]byte(color.GreenString("Command done")))
+		return s.LogsWriter.Close()
 	}
 
 }

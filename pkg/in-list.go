@@ -1,8 +1,8 @@
 package pkg
 
-func InServiceList(list []Service, item Service) bool {
+func InServiceList(list []Service, name string) bool {
 	for _, i := range list {
-		if item.Name == i.Name {
+		if name == i.Name {
 			return true
 		}
 	}

@@ -2,7 +2,6 @@ package pkg
 
 import (
 	"io"
-	"os"
 	"strings"
 
 	"github.com/fatih/color"
@@ -21,26 +20,18 @@ var (
 	}
 )
 
-func NewPrefixOutput(prefix string) PrefixOutput {
+func NewPrefixWriter(prefix string, writer io.Writer) PrefixWriter {
 	colorIndex = (colorIndex + 1) % len(colors)
-	return PrefixOutput{
-		Stdout: prefixWriter{prefix, colors[colorIndex], os.Stdout},
-		Stderr: prefixWriter{prefix, colors[colorIndex], os.Stderr},
-	}
+	return PrefixWriter{prefix, colors[colorIndex], writer}
 }
 
-type PrefixOutput struct {
-	Stdout prefixWriter
-	Stderr prefixWriter
-}
-
-type prefixWriter struct {
+type PrefixWriter struct {
 	prefix    string
 	colorName color.Attribute
 	writer    io.Writer
 }
 
-func (w prefixWriter) Write(p []byte) (n int, err error) {
+func (w PrefixWriter) Write(p []byte) (n int, err error) {
 	split := strings.Split(string(p), "\n")
 	prefix := color.New(w.colorName).Sprintf("%-20s | ", w.prefix)
 

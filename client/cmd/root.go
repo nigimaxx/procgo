@@ -1,14 +1,11 @@
 package cmd
 
 import (
-	"log"
 	"os"
 
 	"github.com/fatih/color"
-	"github.com/nigimaxx/procgo/pkg"
 	"github.com/nigimaxx/procgo/proto"
 	"github.com/spf13/cobra"
-	"google.golang.org/grpc"
 )
 
 var (
@@ -28,12 +25,8 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&procfile, "procfile", "j", "Procfile", "procfile")
 
 	rootCmd.AddCommand(startCmd)
-
-	conn, err := grpc.Dial("unix://"+pkg.SocketPath, grpc.WithInsecure())
-	if err != nil {
-		log.Fatal(err)
-	}
-	client = proto.NewProcgoClient(conn)
+	rootCmd.AddCommand(restartCmd)
+	rootCmd.AddCommand(stopCmd)
 }
 
 func Execute() {

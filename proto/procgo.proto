@@ -2,9 +2,15 @@ syntax = "proto3";
 option go_package = "./;proto";
 
 import "google/protobuf/empty.proto";
+import "google/protobuf/wrappers.proto";
 
 message Services {
   repeated ServiceDefinition services = 1;
+}
+
+message AllOrServices {
+  bool all = 1;
+  repeated ServiceDefinition services = 2;
 }
 
 message ServiceDefinition {
@@ -17,5 +23,9 @@ service Procgo {
   rpc Stop (Services) returns (google.protobuf.Empty);
   rpc Restart (Services) returns (google.protobuf.Empty);
 
+  rpc Logs (AllOrServices) returns (stream google.protobuf.BytesValue);
+
   rpc KillAll (google.protobuf.Empty) returns (google.protobuf.Empty);
+
+  rpc Ping (google.protobuf.Empty) returns (google.protobuf.Empty);
 }

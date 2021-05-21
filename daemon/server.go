@@ -6,6 +6,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/fatih/color"
 	"github.com/nigimaxx/procgo/daemon/handler"
 	"github.com/nigimaxx/procgo/pkg"
 	"github.com/nigimaxx/procgo/proto"
@@ -13,16 +14,21 @@ import (
 )
 
 func main() {
-	// outfile, err := os.Create("./procgo.log")
-	// if err != nil {
-	// 	log.Fatalf("failed to open log file: %v", err)
-	// }
+	color.NoColor = false
 
-	// os.Stdout = outfile
-
-	if err := os.RemoveAll(pkg.SocketPath); err != nil {
-		log.Fatalf("failed to remove socket: %v", err)
+	f, err := os.OpenFile("procgo.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	if err != nil {
+		log.Fatalf("error opening file: %v", err)
 	}
+	defer f.Close()
+	log.SetOutput(f)
+
+	if len(os.Args) < 2 || os.Args[1] == "" {
+		log.Fatal("Missing procfile path")
+	}
+
+	procfile := os.Args[1]
+	log.Println("Procfile", procfile)
 
 	conn, err := net.Listen("unix", pkg.SocketPath)
 	if err != nil {
@@ -31,7 +37,7 @@ func main() {
 
 	server := handler.NewProcgoServer()
 
-	grpcServer := grpc.NewServer()
+	grpcServer := grpc.NewServer(pkg.WithServerUnaryInterceptor(procfile))
 	proto.RegisterProcgoServer(grpcServer, &server)
 
 	doneChan := make(chan struct{})
@@ -39,12 +45,15 @@ func main() {
 	go func() {
 		for {
 			select {
-			case <-server.ErrChan:
+			case err := <-server.ErrChan:
+				log.Println(err)
 				close(server.KillChan)
 				time.Sleep(1 * time.Second)
 				close(doneChan)
 			case <-server.DoneChan:
+				log.Println("Done")
 				if len(server.Services) == 0 {
+					time.Sleep(1 * time.Second)
 					close(doneChan)
 				}
 			}
@@ -54,9 +63,15 @@ func main() {
 	go func() {
 		err := grpcServer.Serve(conn)
 		if err != nil {
+			log.Println(err)
 			log.Fatal(err)
 		}
 	}()
 
+	log.Println("Starting")
+
 	<-doneChan
+
+	log.Println("Stopping")
+	grpcServer.Stop()
 }
