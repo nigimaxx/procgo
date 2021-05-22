@@ -3,7 +3,7 @@ package handler
 import (
 	"context"
 
-	"github.com/nigimaxx/procgo/pkg"
+	"github.com/nigimaxx/procgo/daemon/pkg"
 	"github.com/nigimaxx/procgo/proto"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
@@ -13,7 +13,7 @@ func (s *ProcgoServer) Start(_ context.Context, definitions *proto.Services) (*e
 		svc := pkg.NewServiceFromDef(svcDef)
 
 		if !pkg.InServiceList(s.Services, svc.Name) {
-			go s.startInternal(svc)
+			go s.startService(svc)
 		}
 	}
 

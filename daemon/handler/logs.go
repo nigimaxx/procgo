@@ -1,28 +1,30 @@
 package handler
 
 import (
-	"github.com/nigimaxx/procgo/pkg"
+	"github.com/nigimaxx/procgo/daemon/pkg"
 	"github.com/nigimaxx/procgo/proto"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
-func listenToService(svc *pkg.Service, stream proto.Procgo_LogsServer, doneChan chan struct{}) {
+func listenToService(svc *pkg.Service, stream proto.Procgo_LogsServer, errChan chan error) {
 	logChan := make(chan []byte)
 	svc.AddListener(logChan)
 
 	for {
 		line, ok := <-logChan
 		if !ok {
-			doneChan <- struct{}{}
+			errChan <- nil
 			break
 		}
 
-		stream.Send(&wrapperspb.BytesValue{Value: line})
+		if err := stream.Send(&wrapperspb.BytesValue{Value: line}); err != nil {
+			errChan <- err
+		}
 	}
 }
 
 func (s *ProcgoServer) Logs(definitions *proto.AllOrServices, stream proto.Procgo_LogsServer) error {
-	doneChan := make(chan struct{})
+	// is used as done channel as well if error is nil
 	errChan := make(chan error)
 
 	services := []*pkg.Service{}
@@ -31,7 +33,7 @@ func (s *ProcgoServer) Logs(definitions *proto.AllOrServices, stream proto.Procg
 	for _, svc := range s.Services {
 		if definitions.All || pkg.InServiceDefList(definitions.Services, svc.Name) {
 			services = append(services, svc)
-			go listenToService(svc, stream, doneChan)
+			go listenToService(svc, stream, errChan)
 		}
 	}
 
@@ -40,20 +42,20 @@ func (s *ProcgoServer) Logs(definitions *proto.AllOrServices, stream proto.Procg
 			svc := <-s.NewServiceChan
 			if (definitions.All || pkg.InServiceDefList(definitions.Services, svc.Name)) && !pkg.InServiceList(services, svc.Name) {
 				serviceCount++
-				go listenToService(svc, stream, doneChan)
+				go listenToService(svc, stream, errChan)
 			}
 		}
 	}()
 
 	for {
-		select {
-		case err := <-errChan:
+		err := <-errChan
+		if err != nil {
 			return err
-		case <-doneChan:
-			serviceCount--
-			if serviceCount == 0 {
-				return nil
-			}
+		}
+
+		serviceCount--
+		if serviceCount == 0 {
+			return nil
 		}
 	}
 }

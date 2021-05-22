@@ -17,7 +17,7 @@ func (s *ProcgoServer) Stop(_ context.Context, definitions *proto.Services) (*em
 		}
 	}
 
-	s.DoneChan <- struct{}{}
+	s.ErrChan <- nil
 
 	return &emptypb.Empty{}, nil
 }

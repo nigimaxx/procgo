@@ -13,7 +13,7 @@ func (s *ProcgoServer) Restart(_ context.Context, definitions *proto.Services) (
 			if svcDef.Name == service.Name {
 				close(service.StopChan)
 				cloned := service.Clone()
-				go s.startInternal(cloned)
+				go s.startService(cloned)
 			}
 		}
 	}

@@ -5,17 +5,17 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/nigimaxx/procgo/pkg"
+	"github.com/nigimaxx/procgo/client/pkg"
 	"github.com/nigimaxx/procgo/proto"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
 
 var logsCmd = &cobra.Command{
-	Use:     "logs [services ...]",
-	Short:   "logs",
-	Long:    `logs`,
-	PreRunE: createConnectPreRun(withStartDaemon),
+	Use:               "logs [services ...]",
+	Short:             "logs",
+	Long:              `logs`,
+	PersistentPreRunE: pkg.CreateConnectPreRun(procfile, setClient, pkg.WithStartDaemon),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		allServices, err := pkg.ParseProcfile(procfile)
 		if err != nil {
@@ -25,12 +25,12 @@ var logsCmd = &cobra.Command{
 		services := []*proto.ServiceDefinition{}
 
 		for _, s := range allServices {
-			if contains(args, s.Name) {
+			if pkg.InStringList(args, s.Name) {
 				services = append(services, s)
 			}
 		}
 
-		stream, err := client.Logs(context.Background(), &proto.AllOrServices{All: true, Services: services})
+		stream, err := client.Logs(context.Background(), &proto.AllOrServices{All: len(args) == 0, Services: services})
 		if err != nil {
 			return err
 		}

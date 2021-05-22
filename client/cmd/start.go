@@ -9,6 +9,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/nigimaxx/procgo/client/pkg"
 	"github.com/nigimaxx/procgo/proto"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -16,29 +17,20 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
-func contains(list []string, item string) bool {
-	for _, i := range list {
-		if item == i {
-			return true
-		}
-	}
-	return false
-}
-
 func init() {
 	startCmd.PersistentFlags().BoolP("detach", "d", false, "detach")
 }
 
 var startCmd = &cobra.Command{
-	Use:     "start [services ...]",
-	Short:   "start",
-	Long:    `start`,
-	PreRunE: createConnectPreRun(withStartDaemon),
+	Use:               "start [services ...]",
+	Short:             "start",
+	Long:              `start`,
+	PersistentPreRunE: pkg.CreateConnectPreRun(procfile, setClient, pkg.WithStartDaemon),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		flagSet := cmd.Flags()
 		detach, _ := flagSet.GetBool("detach")
 
-		services, err := parseAndSelect(args)
+		services, err := pkg.ParseAndSelect(procfile, args)
 		if err != nil {
 			return err
 		}

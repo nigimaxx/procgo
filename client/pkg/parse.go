@@ -31,3 +31,30 @@ func ParseProcfile(procfile string) ([]*proto.ServiceDefinition, error) {
 
 	return services, nil
 }
+
+// ParseAndSelect parse the procfile and returns the services mentioned in the args or all
+func ParseAndSelect(procfile string, args []string) ([]*proto.ServiceDefinition, error) {
+	allServices, err := ParseProcfile(procfile)
+	if err != nil {
+		return nil, err
+	}
+
+	services := []*proto.ServiceDefinition{}
+
+	for _, s := range allServices {
+		if len(args) == 0 || InStringList(args, s.Name) {
+			services = append(services, s)
+		}
+	}
+
+	return services, nil
+}
+
+func InStringList(list []string, item string) bool {
+	for _, i := range list {
+		if item == i {
+			return true
+		}
+	}
+	return false
+}

@@ -1,4 +1,4 @@
-package cmd
+package pkg
 
 import (
 	"context"
@@ -9,7 +9,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/nigimaxx/procgo/pkg"
+	"github.com/nigimaxx/procgo/common"
 	"github.com/nigimaxx/procgo/proto"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
@@ -24,28 +24,32 @@ type options struct {
 
 type connectOption func(options) options
 
-func withStartDaemon(opts options) options {
+func WithStartDaemon(opts options) options {
 	opts.start = true
 	return opts
 }
 
-func createConnectPreRun(opts ...connectOption) func(*cobra.Command, []string) error {
+type setClient func(proto.ProcgoClient)
+
+func CreateConnectPreRun(procfile string, setClient setClient, opts ...connectOption) func(*cobra.Command, []string) error {
 	connOpts := options{}
 	for _, o := range opts {
 		connOpts = o(connOpts)
 	}
 
 	return func(_ *cobra.Command, _ []string) error {
-		conn, err := grpc.Dial("unix://"+pkg.SocketPath, grpc.WithInsecure(), pkg.WithClientUnaryInterceptor(procfile))
+		conn, err := grpc.Dial("unix://"+common.SocketPath, grpc.WithInsecure(), WithClientUnaryInterceptor(procfile))
 		if err != nil {
 			return err
 		}
 
-		client = proto.NewProcgoClient(conn)
+		client := proto.NewProcgoClient(conn)
+		setClient(client)
+
 		if _, err := client.Ping(context.Background(), &emptypb.Empty{}); err != nil {
 			st, ok := status.FromError(err)
 			if connOpts.start && ok && st.Code() == codes.Unavailable {
-				return startDaemon()
+				return startDaemon(procfile, client)
 			}
 
 			return err
@@ -55,10 +59,10 @@ func createConnectPreRun(opts ...connectOption) func(*cobra.Command, []string) e
 	}
 }
 
-func startDaemon() error {
+func startDaemon(procfile string, client proto.ProcgoClient) error {
 	log.Println("Starting daemon")
 
-	if err := os.RemoveAll(pkg.SocketPath); err != nil {
+	if err := os.RemoveAll(common.SocketPath); err != nil {
 		return err
 	}
 

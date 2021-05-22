@@ -8,10 +8,9 @@ import (
 )
 
 var killCmd = &cobra.Command{
-	Use:     "kill",
-	Short:   "kill",
-	Long:    `kill`,
-	PreRunE: createConnectPreRun(),
+	Use:   "kill",
+	Short: "kill",
+	Long:  `kill`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		_, err := client.KillAll(context.Background(), &emptypb.Empty{})
 		return err

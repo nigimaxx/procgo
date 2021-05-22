@@ -88,16 +88,11 @@ func (s *Service) Start(killChan <-chan os.Signal) error {
 		return err
 	}
 
+	// use as done channel as well if error is nil
 	cmdErrChan := make(chan error)
-	doneChan := make(chan struct{})
 
 	go func() {
-		err := cmd.Wait()
-		if err != nil {
-			cmdErrChan <- err
-		} else {
-			doneChan <- struct{}{}
-		}
+		cmdErrChan <- cmd.Wait()
 	}()
 
 	go func() {
@@ -128,16 +123,20 @@ func (s *Service) Start(killChan <-chan os.Signal) error {
 		cmd.Process.Signal(syscall.SIGINT)
 		close(s.logChan)
 		return nil
+
 	case <-s.StopChan:
 		out.Write([]byte(color.YellowString("Killing with signal %v", syscall.SIGINT)))
 		cmd.Process.Signal(syscall.SIGINT)
 		close(s.logChan)
 		return nil
+
 	case err := <-cmdErrChan:
-		out.Write([]byte(color.RedString("Error %v", err)))
-		close(s.logChan)
-		return err
-	case <-doneChan:
+		if err != nil {
+			out.Write([]byte(color.RedString("Error %v", err)))
+			close(s.logChan)
+			return err
+		}
+
 		out.Write([]byte(color.GreenString("Command done")))
 		close(s.logChan)
 		return nil

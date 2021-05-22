@@ -7,8 +7,9 @@ import (
 	"time"
 
 	"github.com/fatih/color"
+	"github.com/nigimaxx/procgo/common"
 	"github.com/nigimaxx/procgo/daemon/handler"
-	"github.com/nigimaxx/procgo/pkg"
+	"github.com/nigimaxx/procgo/daemon/pkg"
 	"github.com/nigimaxx/procgo/proto"
 	"google.golang.org/grpc"
 )
@@ -30,7 +31,7 @@ func main() {
 	procfile := os.Args[1]
 	log.Println("Procfile", procfile)
 
-	conn, err := net.Listen("unix", pkg.SocketPath)
+	conn, err := net.Listen("unix", common.SocketPath)
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
@@ -44,17 +45,20 @@ func main() {
 
 	go func() {
 		for {
-			select {
-			case err := <-server.ErrChan:
+			err := <-server.ErrChan
+			if err != nil {
 				log.Println("Error:", err)
+
 				close(server.KillChan)
 				time.Sleep(1 * time.Second)
 				close(doneChan)
-			case <-server.DoneChan:
-				if len(server.Services) == 0 {
-					time.Sleep(1 * time.Second)
-					close(doneChan)
-				}
+
+				continue
+			}
+
+			if len(server.Services) == 0 {
+				time.Sleep(1 * time.Second)
+				close(doneChan)
 			}
 		}
 	}()

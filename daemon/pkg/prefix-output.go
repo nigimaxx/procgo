@@ -16,14 +16,7 @@ func (w PrefixWriter) Write(p []byte) (n int, err error) {
 	split := strings.Split(string(p), "\n")
 	prefix := color.New(w.colorName).Sprintf("%-20s | ", w.prefix)
 
-	withPrefix := ""
-
-	for _, s := range split {
-		if len(s) > 0 {
-			withPrefix += prefix + s + "\n"
-		}
-	}
-
+	withPrefix := prefix + strings.Join(split, "\n"+prefix) + "\n"
 	w.ch <- []byte(withPrefix)
 
 	return len(p), nil
