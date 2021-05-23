@@ -23,8 +23,8 @@ func init() {
 
 var startCmd = &cobra.Command{
 	Use:               "start [services ...]",
-	Short:             "start",
-	Long:              `start`,
+	Short:             "starts the provided services",
+	Long:              `starts the provided services of all services if none is provided`,
 	PersistentPreRunE: pkg.CreateConnectPreRun(procfile, setClient, pkg.WithStartDaemon),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		flagSet := cmd.Flags()

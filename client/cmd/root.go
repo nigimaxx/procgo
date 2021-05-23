@@ -14,9 +14,12 @@ var (
 	client   proto.ProcgoClient
 
 	rootCmd = &cobra.Command{
-		Use:               "procgo",
-		Short:             "procgo",
-		Long:              `procgo`,
+		Use:   "procgo",
+		Short: "procgo is tool to run local services concurrently",
+		Long: `procgo is tool to run local services concurrently.
+It is similar to foreman. The main difference is
+that it consists of a client daemon architecture
+which allows it to start/stop/restart services independently.`,
 		SilenceErrors:     true,
 		SilenceUsage:      true,
 		PersistentPreRunE: pkg.CreateConnectPreRun(procfile, setClient),

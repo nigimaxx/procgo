@@ -13,8 +13,8 @@ import (
 
 var logsCmd = &cobra.Command{
 	Use:               "logs [services ...]",
-	Short:             "logs",
-	Long:              `logs`,
+	Short:             "prints the logs of the services",
+	Long:              `prints the logs of the provided services or of all services if none is provided`,
 	PersistentPreRunE: pkg.CreateConnectPreRun(procfile, setClient, pkg.WithStartDaemon),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		allServices, err := pkg.ParseProcfile(procfile)

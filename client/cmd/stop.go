@@ -10,8 +10,8 @@ import (
 
 var stopCmd = &cobra.Command{
 	Use:   "stop [services ...]",
-	Short: "stop",
-	Long:  `stop`,
+	Short: "stops the provided services",
+	Long:  `stops the provided services of all services if none is provided`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		services, err := pkg.ParseAndSelect(procfile, args)
 		if err != nil {

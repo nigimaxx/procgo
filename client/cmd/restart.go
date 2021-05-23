@@ -10,8 +10,8 @@ import (
 
 var restartCmd = &cobra.Command{
 	Use:   "restart [services ...]",
-	Short: "restart",
-	Long:  `restart`,
+	Short: "restarts the provided services",
+	Long:  `restarts the provided services of all services if none is provided`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		services, err := pkg.ParseAndSelect(procfile, args)
 		if err != nil {

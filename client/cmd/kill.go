@@ -9,8 +9,8 @@ import (
 
 var killCmd = &cobra.Command{
 	Use:   "kill",
-	Short: "kill",
-	Long:  `kill`,
+	Short: "kills the daemon",
+	Long:  `kills the daemon if it isn't exiting`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		_, err := client.KillAll(context.Background(), &emptypb.Empty{})
 		return err
