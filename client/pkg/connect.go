@@ -46,9 +46,13 @@ func CreateConnectPreRun(procfile string, setClient setClient, opts ...connectOp
 		client := proto.NewProcgoClient(conn)
 		setClient(client)
 
+		if !connOpts.start {
+			return nil
+		}
+
 		if _, err := client.Ping(context.Background(), &emptypb.Empty{}); err != nil {
 			st, ok := status.FromError(err)
-			if connOpts.start && ok && st.Code() == codes.Unavailable {
+			if ok && st.Code() == codes.Unavailable {
 				return startDaemon(procfile, client)
 			}
 

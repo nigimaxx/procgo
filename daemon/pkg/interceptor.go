@@ -27,7 +27,7 @@ func WithServerUnaryInterceptor(procfile string) grpc.ServerOption {
 			return nil, status.Errorf(codes.InvalidArgument, "Procfile not supplied")
 		}
 
-		if procfile != procfileHeader[0] {
+		if procfile != procfileHeader[0] && info.FullMethod != "/Procgo/KillAll" {
 			log.Println(procfile, procfileHeader)
 			return nil, status.Errorf(codes.InvalidArgument, "Wrong Procfile")
 		}
