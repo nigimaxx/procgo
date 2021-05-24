@@ -33,16 +33,25 @@ func setClient(c proto.ProcgoClient) {
 func init() {
 	rootCmd.PersistentFlags().StringVarP(&procfile, "procfile", "j", "Procfile", "procfile")
 
+	rootCmd.InitDefaultHelpCmd()
+	rootCmd.InitDefaultHelpFlag()
+	rootCmd.InitDefaultVersionFlag()
+
 	rootCmd.AddCommand(startCmd)
 	rootCmd.AddCommand(restartCmd)
 	rootCmd.AddCommand(stopCmd)
 	rootCmd.AddCommand(logsCmd)
 	rootCmd.AddCommand(killCmd)
+	rootCmd.AddCommand(completionCmd)
+}
+
+func SetVersion(version string) {
+	rootCmd.Version = version
 }
 
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
-		color.Red(err.Error())
+		color.New(color.FgRed).Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 }

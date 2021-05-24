@@ -5,3 +5,6 @@ go build -o procgo
 
 cd ../daemon
 go build -o procgo-daemon
+
+cd ..
+procgo completion
