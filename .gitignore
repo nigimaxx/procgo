@@ -27,3 +27,4 @@
 procgo
 *.log
 _procgo
+dist/
