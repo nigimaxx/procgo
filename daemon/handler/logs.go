@@ -26,9 +26,7 @@ func listenToService(svc *pkg.Service, stream proto.Procgo_LogsServer, errChan c
 func (s *ProcgoServer) Logs(definitions *proto.AllOrServices, stream proto.Procgo_LogsServer) error {
 	// is used as done channel as well if error is nil
 	errChan := make(chan error)
-
 	services := []*pkg.Service{}
-	serviceCount := len(services)
 
 	for _, svc := range s.Services {
 		if definitions.All || pkg.InServiceDefList(definitions.Services, svc.Name) {
@@ -36,6 +34,8 @@ func (s *ProcgoServer) Logs(definitions *proto.AllOrServices, stream proto.Procg
 			go listenToService(svc, stream, errChan)
 		}
 	}
+
+	serviceCount := len(services)
 
 	go func() {
 		for {
