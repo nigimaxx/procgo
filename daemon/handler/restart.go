@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"time"
 
 	"github.com/nigimaxx/procgo/proto"
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -13,6 +14,7 @@ func (s *ProcgoServer) Restart(_ context.Context, definitions *proto.Services) (
 			if svcDef.Name == service.Name {
 				close(service.StopChan)
 				cloned := service.Clone()
+				time.Sleep(1 * time.Millisecond)
 				go s.startService(cloned)
 			}
 		}

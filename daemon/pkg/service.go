@@ -5,6 +5,7 @@ import (
 	"os/exec"
 	"sync"
 	"syscall"
+	"time"
 
 	"github.com/fatih/color"
 	"github.com/nigimaxx/procgo/proto"
@@ -31,6 +32,11 @@ func init() {
 	}
 }
 
+func nextColor() color.Attribute {
+	colorIndex = (colorIndex + 1) % len(colors)
+	return colors[colorIndex]
+}
+
 type Service struct {
 	Name     string
 	Command  string
@@ -48,18 +54,19 @@ func NewServiceFromDef(s *proto.ServiceDefinition) *Service {
 		Name:      s.Name,
 		Command:   s.Command,
 		StopChan:  make(chan os.Signal),
-		colorName: colors[colorIndex],
+		colorName: nextColor(),
 		logChan:   make(chan []byte),
 		listeners: make(map[chan []byte]struct{}),
 	}
 }
 
 func (s *Service) Clone() *Service {
+	colorIndex = (colorIndex + 1) % len(colors)
 	return &Service{
 		Name:      s.Name,
 		Command:   s.Command,
 		StopChan:  make(chan os.Signal),
-		colorName: s.colorName,
+		colorName: nextColor(),
 		logChan:   make(chan []byte),
 		listeners: make(map[chan []byte]struct{}),
 	}
@@ -88,26 +95,30 @@ func (s *Service) Start(killChan <-chan os.Signal) error {
 		return err
 	}
 
-	// use as done channel as well if error is nil
+	// use as done channel of command as well if error is nil
 	cmdErrChan := make(chan error)
+	shutdownChan := make(chan struct{})
 
 	go func() {
 		cmdErrChan <- cmd.Wait()
 	}()
 
 	go func() {
-		for {
-			line, ok := <-s.logChan
-			if !ok {
-				for l := range s.listeners {
-					close(l)
-				}
+		<-shutdownChan
+		time.Sleep(250 * time.Millisecond) // 250ms grace period for logs
 
-				s.mu.Lock()
-				s.listeners = make(map[chan []byte]struct{})
-				s.mu.Unlock()
-				break
-			}
+		for l := range s.listeners {
+			close(l)
+		}
+
+		s.mu.Lock()
+		s.listeners = make(map[chan []byte]struct{})
+		s.mu.Unlock()
+	}()
+
+	go func() {
+		for {
+			line := <-s.logChan
 
 			s.mu.Lock()
 			for l := range s.listeners {
@@ -121,24 +132,24 @@ func (s *Service) Start(killChan <-chan os.Signal) error {
 	case <-killChan:
 		out.Write([]byte(color.YellowString("Killing with signal %v", syscall.SIGINT)))
 		cmd.Process.Signal(syscall.SIGINT)
-		close(s.logChan)
+		shutdownChan <- struct{}{}
 		return nil
 
 	case <-s.StopChan:
 		out.Write([]byte(color.YellowString("Killing with signal %v", syscall.SIGINT)))
 		cmd.Process.Signal(syscall.SIGINT)
-		close(s.logChan)
+		shutdownChan <- struct{}{}
 		return nil
 
 	case err := <-cmdErrChan:
 		if err != nil {
 			out.Write([]byte(color.RedString("Error %v", err)))
-			close(s.logChan)
+			shutdownChan <- struct{}{}
 			return err
 		}
 
 		out.Write([]byte(color.GreenString("Command done")))
-		close(s.logChan)
+		shutdownChan <- struct{}{}
 		return nil
 	}
 }

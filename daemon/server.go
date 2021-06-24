@@ -22,7 +22,7 @@ func main() {
 		log.Fatalf("error opening file: %v", err)
 	}
 	defer f.Close()
-	log.SetOutput(f)
+	// log.SetOutput(f)
 
 	if len(os.Args) < 2 || os.Args[1] == "" {
 		log.Fatal("Missing procfile path")
@@ -57,8 +57,7 @@ func main() {
 			}
 
 			if len(server.Services) == 0 {
-				time.Sleep(1 * time.Second)
-				close(doneChan)
+				doneChan <- struct{}{}
 			}
 		}
 	}()

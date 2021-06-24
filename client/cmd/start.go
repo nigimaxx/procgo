@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"os/signal"
 	"syscall"
@@ -13,7 +12,6 @@ import (
 	"github.com/nigimaxx/procgo/proto"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
@@ -74,9 +72,6 @@ var startCmd = &cobra.Command{
 				}
 
 				if err != nil {
-					st, _ := status.FromError(err)
-					log.Println(st.Code(), st.Message(), st.Details())
-
 					errChan <- errors.Wrap(err, "logs")
 					break
 				}
