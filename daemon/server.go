@@ -1,3 +1,5 @@
+//go:generate protoc --go_out=.. --go_opt=paths=source_relative --go-grpc_out=.. --go-grpc_opt=paths=source_relative --proto_path=.. ../proto/procgo.proto
+
 package main
 
 import (
@@ -22,7 +24,7 @@ func main() {
 		log.Fatalf("error opening file: %v", err)
 	}
 	defer f.Close()
-	// log.SetOutput(f)
+	log.SetOutput(f)
 
 	if len(os.Args) < 2 || os.Args[1] == "" {
 		log.Fatal("Missing procfile path")
@@ -74,6 +76,7 @@ func main() {
 
 	<-doneChan
 
-	log.Println("Stopping")
+	log.Println("Stopping in 1s")
+	time.Sleep(1 * time.Second)
 	grpcServer.Stop()
 }

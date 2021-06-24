@@ -41,6 +41,7 @@ func init() {
 	rootCmd.AddCommand(restartCmd)
 	rootCmd.AddCommand(stopCmd)
 	rootCmd.AddCommand(logsCmd)
+	rootCmd.AddCommand(statusCmd)
 	rootCmd.AddCommand(killCmd)
 	rootCmd.AddCommand(completionCmd)
 }

@@ -23,6 +23,7 @@ type ProcgoClient interface {
 	Stop(ctx context.Context, in *Services, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	Restart(ctx context.Context, in *Services, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	Logs(ctx context.Context, in *AllOrServices, opts ...grpc.CallOption) (Procgo_LogsClient, error)
+	List(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*Services, error)
 	KillAll(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	Ping(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
@@ -94,6 +95,15 @@ func (x *procgoLogsClient) Recv() (*wrapperspb.BytesValue, error) {
 	return m, nil
 }
 
+func (c *procgoClient) List(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*Services, error) {
+	out := new(Services)
+	err := c.cc.Invoke(ctx, "/Procgo/List", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *procgoClient) KillAll(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	out := new(emptypb.Empty)
 	err := c.cc.Invoke(ctx, "/Procgo/KillAll", in, out, opts...)
@@ -120,6 +130,7 @@ type ProcgoServer interface {
 	Stop(context.Context, *Services) (*emptypb.Empty, error)
 	Restart(context.Context, *Services) (*emptypb.Empty, error)
 	Logs(*AllOrServices, Procgo_LogsServer) error
+	List(context.Context, *emptypb.Empty) (*Services, error)
 	KillAll(context.Context, *emptypb.Empty) (*emptypb.Empty, error)
 	Ping(context.Context, *emptypb.Empty) (*emptypb.Empty, error)
 	mustEmbedUnimplementedProcgoServer()
@@ -140,6 +151,9 @@ func (UnimplementedProcgoServer) Restart(context.Context, *Services) (*emptypb.E
 }
 func (UnimplementedProcgoServer) Logs(*AllOrServices, Procgo_LogsServer) error {
 	return status.Errorf(codes.Unimplemented, "method Logs not implemented")
+}
+func (UnimplementedProcgoServer) List(context.Context, *emptypb.Empty) (*Services, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method List not implemented")
 }
 func (UnimplementedProcgoServer) KillAll(context.Context, *emptypb.Empty) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method KillAll not implemented")
@@ -235,6 +249,24 @@ func (x *procgoLogsServer) Send(m *wrapperspb.BytesValue) error {
 	return x.ServerStream.SendMsg(m)
 }
 
+func _Procgo_List_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(emptypb.Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProcgoServer).List(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/Procgo/List",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProcgoServer).List(ctx, req.(*emptypb.Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Procgo_KillAll_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(emptypb.Empty)
 	if err := dec(in); err != nil {
@@ -286,6 +318,10 @@ var _Procgo_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Restart",
 			Handler:    _Procgo_Restart_Handler,
+		},
+		{
+			MethodName: "List",
+			Handler:    _Procgo_List_Handler,
 		},
 		{
 			MethodName: "KillAll",

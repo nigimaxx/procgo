@@ -25,6 +25,8 @@ service Procgo {
 
   rpc Logs (AllOrServices) returns (stream google.protobuf.BytesValue);
 
+  rpc List (google.protobuf.Empty) returns (Services);
+
   rpc KillAll (google.protobuf.Empty) returns (google.protobuf.Empty);
 
   rpc Ping (google.protobuf.Empty) returns (google.protobuf.Empty);
