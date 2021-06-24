@@ -45,6 +45,7 @@ Available Commands:
   logs        prints the logs of the services
   restart     restarts the provided services
   start       starts the provided services
+  status      lists all running services
   stop        stops the provided services
 
 Flags:
