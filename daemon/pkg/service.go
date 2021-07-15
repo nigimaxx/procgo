@@ -22,6 +22,13 @@ var (
 		color.FgMagenta,
 		color.FgCyan,
 		color.FgWhite,
+		color.FgHiRed,
+		color.FgHiGreen,
+		color.FgHiYellow,
+		color.FgHiBlue,
+		color.FgHiMagenta,
+		color.FgHiCyan,
+		color.FgHiWhite,
 	}
 )
 
@@ -49,7 +56,6 @@ type Service struct {
 }
 
 func NewServiceFromDef(s *proto.ServiceDefinition) *Service {
-	colorIndex = (colorIndex + 1) % len(colors)
 	return &Service{
 		Name:      s.Name,
 		Command:   s.Command,
@@ -61,7 +67,6 @@ func NewServiceFromDef(s *proto.ServiceDefinition) *Service {
 }
 
 func (s *Service) Clone() *Service {
-	colorIndex = (colorIndex + 1) % len(colors)
 	return &Service{
 		Name:      s.Name,
 		Command:   s.Command,
