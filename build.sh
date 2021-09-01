@@ -7,4 +7,4 @@ cd ../daemon
 go build -o procgo-daemon
 
 cd ..
-procgo completion
+procgo completion > /usr/local/share/zsh/site-functions/_procgo

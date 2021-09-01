@@ -21,10 +21,9 @@ sudo chmod 666 /var/log/procgo/daemon.log
 ### Completion
 
 ```sh
-procgo completion
+# Write to some location in FPATH
 
-# Move to some location in FPATH
-mv _procgo /usr/local/share/zsh/site-functions
+procgo completion > /usr/local/share/zsh/site-functions/_procgo
 ```
 
 ## Usage

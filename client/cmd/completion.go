@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"bytes"
-	"os"
+	"fmt"
 
 	"github.com/spf13/cobra"
 )
@@ -19,13 +19,10 @@ var completionCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, _ []string) error {
 		// code copied from https://github.com/kubernetes/kubectl/blob/031e3ab456e6d0e676aecd163e52fcb4906e1faf/pkg/cmd/completion/completion.go
 
-		f, err := os.Create("_procgo")
-		if err != nil {
-			return err
-		}
+		buf := new(bytes.Buffer)
 
 		zshHead := "#compdef procgo\n"
-		f.Write([]byte(zshHead))
+		buf.Write([]byte(zshHead))
 
 		zshInitialization := `
 __procgo_bash_source() {
@@ -115,18 +112,19 @@ __procgo_convert_bash_to_zsh() {
 	-e "s/\\\$(type${RWORD}/\$(__procgo_type/g" \
 	<<'BASH_COMPLETION_EOF'
 `
-		f.Write([]byte(zshInitialization))
+		buf.Write([]byte(zshInitialization))
 
-		buf := new(bytes.Buffer)
 		cmd.Root().GenBashCompletion(buf)
-		f.Write(buf.Bytes())
 
 		zshTail := `
 BASH_COMPLETION_EOF
 }
 __procgo_bash_source <(__procgo_convert_bash_to_zsh)
 `
-		f.Write([]byte(zshTail))
+		buf.Write([]byte(zshTail))
+
+		fmt.Print(buf.String())
+
 		return nil
 	},
 }

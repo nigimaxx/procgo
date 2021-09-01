@@ -13,8 +13,7 @@ cwd=$(pwd)
 ln -s "$cwd/client/procgo" /usr/local/bin
 ln -s "$cwd/daemon/procgo-daemon" /usr/local/bin
 
-procgo completion
-ln -s "$cwd/_procgo" /usr/local/share/zsh/site-functions
+procgo completion > /usr/local/share/zsh/site-functions/_procgo
 
 sudo mkdir /var/log/procgo
 sudo touch /var/log/procgo/daemon.log
