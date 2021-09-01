@@ -22,7 +22,6 @@ sudo chmod 666 /var/log/procgo/daemon.log
 
 ```sh
 # Write to some location in FPATH
-
 procgo completion > /usr/local/share/zsh/site-functions/_procgo
 ```
 
